@@ -140,9 +140,10 @@ DUHICONS[name]=cv.toDataURL();return DUHICONS[name];}
 var duReadEra=null;
 function eraRead(i){reset();duReadEra=i;render();scrollTo(0,0);}
 function eraReadBack(){duReadEra=null;goRoam();}
+function eraReadHome(){duReadEra=null;library();}
 function eraReadSave(id){const e=E.find(x=>x.id===id);if(e)unlock([e]);render();}
 function eraReadDraw(){const i=duReadEra,a=ages[i];const range=a[1]<0?Math.abs(a[1]).toLocaleString()+' BCE \u2013 '+(a[2]<0?Math.abs(a[2]).toLocaleString()+' BCE':a[2]+' CE'):Math.floor(a[1])+'\u2013'+Math.floor(a[2])+' CE';const list=E.filter(e=>e.year>=a[1]&&e.year<=a[2]).slice().sort((x,y)=>x.year-y.year);
-let s='<header class="top">'+btn('\u25c0 Back','eraReadBack()','navbtn')+'<a class="navbtn arcadebtn" href="../pixel-arcade/?v=history519">\u25c0 Pixel Arcade</a>'+btn('\u25c0 Home','library()','navbtn cardsbtn')+'</header><div class="brand">NEON <span>TIME LAB</span><small>Roam freely</small></div>';
+let s='<header class="top">'+btn('\u25c0 Back','eraReadBack()','navbtn')+'<a class="navbtn arcadebtn" href="../pixel-arcade/?v=history519">\u25c0 Pixel Arcade</a>'+btn('\u25c0 Home','eraReadHome()','navbtn cardsbtn')+'</header><div class="brand">NEON <span>TIME LAB</span><small>Roam freely</small></div>';
 s+='<section class="playbar"><div class="eyebrow">'+esc(range)+'</div><h2>'+esc(a[0])+'</h2><p class="note">'+list.length+' illustrated stories in time order. Read at your own pace and save the cards you like.</p>';
 s+=list.map(x=>'<article class="event"><p class="badge">'+esc(date(x))+'</p>'+story(x)+btn(cards.includes(x.id)?'Collected':'Save this card','eraReadSave('+JSON.stringify(x.id)+')','launch',cards.includes(x.id))+'</article>').join('');
 s+='<p class="note">Country labels are modern navigation aids, not historical borders. Illustrations are fictional guide art, not exact reconstructions.</p></section>';
