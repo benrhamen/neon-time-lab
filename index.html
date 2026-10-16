@@ -1,4 +1,4 @@
 <!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Neon Time Lab</title><body style="background:#0a0e1f;color:#fff;font:16px sans-serif"><p id=m>Loading Neon Time Lab...</p><script>
-(async()=>{const q=(location.search||"?1").slice(1);const r=await Promise.all(Array.from({length:30},(_,i)=>fetch("p"+String(i).padStart(2,"0")+".txt?"+q).then(x=>{if(!x.ok)throw 0;return x.text()})));
+(async()=>{const q=(location.search||"?1").slice(1);const r=await Promise.all(Array.from({length:14},(_,i)=>fetch("v2/c"+i+".txt?"+q).then(x=>{if(!x.ok)throw 0;return x.text()})));
 document.open();document.write(r.map(t=>t.replace(/\n$/,"")).join(""));document.close()})().catch(()=>{document.getElementById("m").textContent="Could not load. Please reload."})
 </script>
