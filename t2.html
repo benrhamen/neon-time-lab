@@ -1,0 +1,8 @@
+<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Neon Time Lab</title><body style="background:#0a0e1f;color:#fff;font:16px sans-serif"><p id=m>Loading Neon Time Lab...</p><script>
+(async()=>{const m=document.getElementById("m"),q=(location.search||"?1").slice(1),N=37,r=new Array(N);let n=0,k=0;
+const P=i=>"s2-"+String(i).padStart(2,"0")+".txt";
+async function get(i){for(let a=0;a<3;a++){const c=new AbortController(),t=setTimeout(()=>c.abort(),40000);try{const x=await fetch(P(i)+"?"+q,{signal:c.signal});if(!x.ok)throw 0;const s=await x.text();clearTimeout(t);return s}catch(e){clearTimeout(t)}}throw 1}
+async function w(){while(k<N){const i=k++;r[i]=await get(i);m.textContent="Loading Neon Time Lab... "+(++n)+"/"+N}}
+await Promise.all([w(),w(),w(),w()]);m.textContent="Starting...";await new Promise(f=>setTimeout(f,50));
+document.open();document.write(r.map(t=>t.replace(/\n$/,"")).join(""));document.close()})().catch(()=>{document.getElementById("m").textContent="Could not load. Please reload."})
+</script>
