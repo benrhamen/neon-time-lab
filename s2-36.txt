@@ -824,15 +824,15 @@ document.addEventListener('click',function(ev){
    (currentColor border) keeps the buttons themed and on one line at 390px. */
 var NB=(function(){try{var ss=document.styleSheets;
  for(var i=0;i<ss.length;i++){var r;try{r=ss[i].cssRules}catch(e){continue}
-  for(var j=0;j<r.length;j++){var st=String(r[j].selectorText||'');if(st.indexOf('navbtn')>=0||st.indexOf('button')>=0)return true}}}catch(e){}
+  for(var j=0;j<r.length;j++){var st=String(r[j].selectorText||'');if(st.indexOf('.navbtn')>=0)return true}}}catch(e){}
  return false})();
 var FALLBACK='font:inherit;font-size:13px;color:inherit;background:rgba(0,0,0,0.25);border:1px solid currentColor;border-radius:4px;padding:6px 8px;margin:0;cursor:pointer;white-space:nowrap;line-height:1.2;flex:1;text-align:center';
 function styleBtn(b){if(NB)b.className='navbtn';else b.style.cssText=FALLBACK}
 function btns(){var back=null,all=document.querySelectorAll('a,button');for(var i=0;i<all.length;i++){if(/Pixel Arcade/.test(all[i].textContent||'')){back=all[i];break}}
  var top=(back&&back.parentElement)||document.querySelector('header.top')||document.querySelector('header .topactions')||document.querySelector('header');if(!top)return;
- if(!NB&&!document.getElementById('tlsnd')){var row=document.createElement('div');
-  row.style.cssText='display:flex;gap:6px;margin:6px 0 2px';
-  if(top.parentElement)top.parentElement.insertBefore(row,top.nextSibling);top=row}
+ if(!NB){var row=document.getElementById('tlrow');if(!row){row=document.createElement('div');
+  row.id='tlrow';row.style.cssText='display:flex;gap:6px;margin:6px 0 2px';
+  if(top.parentElement)top.parentElement.insertBefore(row,top.nextSibling)}top=row}
  if(!document.getElementById('tlsnd')){var b=document.createElement('button');b.id='tlsnd';styleBtn(b);
   b.textContent=sndOn?'Sound On':'Sound Off';b.onclick=function(){sndOn=!sndOn;sv('tl.snd.v1',sndOn);
   b.textContent=sndOn?'Sound On':'Sound Off';if(sndOn){ctx();SFX.tick()}};top.appendChild(b)}
