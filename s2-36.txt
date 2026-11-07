@@ -275,11 +275,7 @@ function classify(){if(!sndOn)return;
  anxDone=anxClicks;
  if(t.indexOf('(-50)')>=0)SFX.wrong();else SFX.found()}
 var anxMO=new MutationObserver(function(){classify()});
-var anxSeen=typeof WeakSet!=='undefined'?new WeakSet():null;
-function watchAnx(){var n=document.getElementById('anxlast');if(!n)return;
- var p=n.parentElement||n;if(anxSeen){if(anxSeen.has(p))return;anxSeen.add(p)}
- try{anxMO.observe(p,{childList:true,characterData:true,subtree:true})}catch(e){}}
-setInterval(watchAnx,900);watchAnx();
+try{anxMO.observe(document.body,{childList:true,characterData:true,subtree:true})}catch(e){}
 document.addEventListener('click',function(ev){
  if(!sndOn)return;
  if(ev.target&&ev.target.closest&&ev.target.closest('.anxitem,.anxhit')){anxClicks++;return}
