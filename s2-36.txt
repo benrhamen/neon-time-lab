@@ -267,11 +267,12 @@ document.addEventListener('visibilitychange',function(){if(!AC)return;
    tap do not double count. */
 var clearedFlag=false,anxClicks=0,anxDone=0;
 function classify(){if(!sndOn)return;
- if(anxClicks===anxDone)return;anxDone=anxClicks;
- if(document.querySelector('.erareward')){if(!clearedFlag){clearedFlag=true;SFX.clear()}return}
+ if(anxClicks===anxDone)return;
+ if(document.querySelector('.erareward')){anxDone=anxClicks;if(!clearedFlag){clearedFlag=true;SFX.clear()}return}
  clearedFlag=false;
  var n=document.getElementById('anxlast');var t=n?n.textContent||'':'';
  if(!t)return;
+ anxDone=anxClicks;
  if(t.indexOf('(-50)')>=0)SFX.wrong();else SFX.found()}
 var anxMO=new MutationObserver(function(){classify()});
 var anxSeen=typeof WeakSet!=='undefined'?new WeakSet():null;
