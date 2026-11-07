@@ -734,3 +734,121 @@ G.rat={c:{K:'#0a1230',N:'#8a7a6a',W:'#e8f4ff',D:'#5a5048'},f:[[
 '................',
 '................',
 '..KK............',
+
+<script>
+/* Neon sound module: calm background music + gentle event sounds.
+   Audio starts OFF. Enabling "Sound" or "Music" is the user's explicit sound-on
+   gesture: only then is Web Audio routed through the playback channel
+   (navigator.audioSession, iOS/Safari 17+; no-op elsewhere) and started.
+   Choices persist per device. Hidden pages suspend audio. */
+(function(){
+if(window.__tlAudioLoaded)return;window.__tlAudioLoaded=1;
+var AC=null,mg=null,mtimer=null,mon=false,nextT=0,step=0,bus=null,AN=null;
+var g=function(k,d){try{var v=localStorage.getItem(k);return v===null?d:v==='1'}catch(e){return d}};
+var sv=function(k,v){try{localStorage.setItem(k,v?'1':'0')}catch(e){}};
+var sndOn=g('tl.snd.v1',false),musOn=g('tl.mus.v1',false);
+var CNT={tick:0,found:0,wrong:0,clear:0};
+function route(){try{if('audioSession'in navigator)navigator.audioSession.type='playback'}catch(e){}}
+function ctx(){route();
+ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+ if(AC&&!bus){bus=AC.createGain();AN=AC.createAnalyser();AN.fftSize=2048;bus.connect(AN);AN.connect(AC.destination)}
+ if(AC&&AC.state==='suspended'){try{var p=AC.resume();if(p&&p.catch)p.catch(function(){})}catch(e){}}
+ return AC}
+/* stored opt-in: resume audio on later taps only if the user enabled sound/music before */
+['pointerdown','touchend','click'].forEach(function(ev){document.addEventListener(ev,function(){
+ if(!sndOn&&!musOn)return;ctx();if(musOn)musStart()},{passive:true})});
+function tone(f,t0,d,ty,v){var a=ctx();if(!a||!sndOn)return;
+ var o=a.createOscillator(),gn=a.createGain(),t=a.currentTime+t0;
+ o.type=ty||'square';o.frequency.setValueAtTime(f,t);
+ gn.gain.setValueAtTime(0.0001,t);gn.gain.linearRampToValueAtTime(v||0.08,t+0.015);
+ gn.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(gn);gn.connect(bus);
+ o.start(t);o.stop(t+d+0.05)}
+var SFX={
+ tick:function(){CNT.tick++;tone(660,0,0.05,'square',0.028)},
+ found:function(){CNT.found++;tone(880,0,0.16,'sine',0.16);tone(1318.5,0.14,0.32,'sine',0.12)},
+ wrong:function(){CNT.wrong++;var a=ctx();if(!a||!sndOn)return;var o=a.createOscillator(),gn=a.createGain(),t=a.currentTime;
+  o.type='sine';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(55,t+0.35);
+  gn.gain.setValueAtTime(0.22,t);gn.gain.exponentialRampToValueAtTime(0.0001,t+0.4);
+  o.connect(gn);gn.connect(bus);o.start(t);o.stop(t+0.45)},
+ clear:function(){CNT.clear++;[523,659,784,1047].forEach(function(f,i){tone(f,i*0.09,0.28,'triangle',0.12)})}
+};
+var CH=[[0,7,12,16],[-3,4,9,12],[-7,0,5,9],[-5,2,7,11]],PENT=[0,2,4,7,9,12,14,16];
+function fq(s){return 220*Math.pow(2,s/12)}
+function pad(t,s,d){var a=ctx();if(!a||!mg)return;
+ var o=a.createOscillator(),o2=a.createOscillator(),gn=a.createGain(),g2=a.createGain(),l=a.createBiquadFilter();
+ o.type='triangle';o.frequency.value=fq(s);o2.type='sine';o2.frequency.value=fq(s-12);g2.gain.value=0.3;
+ l.type='lowpass';l.frequency.value=1400;gn.gain.setValueAtTime(0.0001,t);gn.gain.linearRampToValueAtTime(0.35,t+d*0.35);
+ gn.gain.linearRampToValueAtTime(0.0001,t+d);o.connect(l);o2.connect(g2);g2.connect(l);l.connect(gn);gn.connect(mg);
+ o.start(t);o.stop(t+d+0.1);o2.start(t);o2.stop(t+d+0.1)}
+function bell(t,s){var a=ctx();if(!a||!mg)return;var o=a.createOscillator(),gn=a.createGain();
+ o.type='sine';o.frequency.value=fq(s+12);gn.gain.setValueAtTime(0.0001,t);
+ gn.gain.linearRampToValueAtTime(0.28,t+0.02);gn.gain.exponentialRampToValueAtTime(0.0001,t+2.4);
+ o.connect(gn);gn.connect(bus);o.start(t);o.stop(t+2.5)}
+function sched(){if(!mon||!AC||!mg)return;while(nextT<AC.currentTime+1.5){var ch=CH[Math.floor(step/4)%4];
+ if(step%4===0)ch.forEach(function(s){pad(nextT,s,8)});
+ if(Math.random()<0.55)bell(nextT+0.05,ch[0]+PENT[Math.floor(Math.random()*PENT.length)]);step++;nextT+=2}}
+function musStart(){if(mon)return;var a=ctx();if(!a)return;mon=true;
+ if(!mg){mg=a.createGain();mg.gain.value=0;mg.connect(bus)}
+ mg.gain.cancelScheduledValues(a.currentTime);mg.gain.setTargetAtTime(0.15,a.currentTime,1.5);
+ nextT=a.currentTime+0.3;sched();mtimer=setInterval(sched,500)}
+function musStop(){if(!mon)return;mon=false;clearInterval(mtimer);
+ if(mg&&AC){mg.gain.cancelScheduledValues(AC.currentTime);mg.gain.setTargetAtTime(0,AC.currentTime,0.3)}}
+document.addEventListener('visibilitychange',function(){if(!AC)return;
+ if(document.hidden){try{AC.suspend()}catch(e){}}else{try{AC.resume()}catch(e){}}});
+/* Anachronist feedback: classify note/score line changes, gated on real scene
+   taps. One classification per tap: duplicate taps on found items mutate nothing
+   and stay silent; repeated wrong taps each sound; multi-pass re-renders of one
+   tap do not double count. */
+var clearedFlag=false,anxClicks=0,anxDone=0;
+function classify(){if(!sndOn)return;
+ if(anxClicks===anxDone)return;anxDone=anxClicks;
+ if(document.querySelector('.erareward')){if(!clearedFlag){clearedFlag=true;SFX.clear()}return}
+ clearedFlag=false;
+ var n=document.getElementById('anxlast');var t=n?n.textContent||'':'';
+ if(!t)return;
+ if(t.indexOf('(-50)')>=0)SFX.wrong();else SFX.found()}
+var anxMO=new MutationObserver(function(){classify()});
+var anxSeen=typeof WeakSet!=='undefined'?new WeakSet():null;
+function watchAnx(){var n=document.getElementById('anxlast');if(!n)return;
+ var p=n.parentElement||n;if(anxSeen){if(anxSeen.has(p))return;anxSeen.add(p)}
+ try{anxMO.observe(p,{childList:true,characterData:true,subtree:true})}catch(e){}}
+setInterval(watchAnx,900);watchAnx();
+document.addEventListener('click',function(ev){
+ if(!sndOn)return;
+ if(ev.target&&ev.target.closest&&ev.target.closest('.anxitem,.anxhit')){anxClicks++;return}
+ var nb=ev.target&&ev.target.closest?ev.target.closest('button,.navbtn,a.navbtn'):null;
+ if(nb&&nb.id!=='tlsnd'&&nb.id!=='tlmus')SFX.tick();
+},true);
+/* header toggles: Sound and Music, next to the back/arcade buttons.
+   Where the page styles .navbtn we use it; otherwise a compact neon fallback
+   (currentColor border) keeps the buttons themed and on one line at 390px. */
+var NB=(function(){try{var ss=document.styleSheets;
+ for(var i=0;i<ss.length;i++){var r;try{r=ss[i].cssRules}catch(e){continue}
+  for(var j=0;j<r.length;j++){var st=String(r[j].selectorText||'');if(st.indexOf('navbtn')>=0||st.indexOf('button')>=0)return true}}}catch(e){}
+ return false})();
+var FALLBACK='font:inherit;font-size:13px;color:inherit;background:rgba(0,0,0,0.25);border:1px solid currentColor;border-radius:4px;padding:6px 8px;margin:0;cursor:pointer;white-space:nowrap;line-height:1.2;flex:1;text-align:center';
+function styleBtn(b){if(NB)b.className='navbtn';else b.style.cssText=FALLBACK}
+function btns(){var back=null,all=document.querySelectorAll('a,button');for(var i=0;i<all.length;i++){if(/Pixel Arcade/.test(all[i].textContent||'')){back=all[i];break}}
+ var top=(back&&back.parentElement)||document.querySelector('header.top')||document.querySelector('header .topactions')||document.querySelector('header');if(!top)return;
+ if(!NB&&!document.getElementById('tlsnd')){var row=document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;margin:6px 0 2px';
+  if(top.parentElement)top.parentElement.insertBefore(row,top.nextSibling);top=row}
+ if(!document.getElementById('tlsnd')){var b=document.createElement('button');b.id='tlsnd';styleBtn(b);
+  b.textContent=sndOn?'Sound On':'Sound Off';b.onclick=function(){sndOn=!sndOn;sv('tl.snd.v1',sndOn);
+  b.textContent=sndOn?'Sound On':'Sound Off';if(sndOn){ctx();SFX.tick()}};top.appendChild(b)}
+ if(!document.getElementById('tlmus')){var m=document.createElement('button');m.id='tlmus';styleBtn(m);
+  m.textContent=musOn?'Music On':'Music Off';m.onclick=function(){musOn=!musOn;sv('tl.mus.v1',musOn);
+  m.textContent=musOn?'Music On':'Music Off';if(musOn)musStart();else musStop()};top.appendChild(m)}}
+setInterval(btns,700);btns();
+window.__tlAudio={state:function(){return{ac:AC?AC.state:null,sndOn:sndOn,musOn:musOn,mon:mon,counts:CNT}},
+ ctl:{suspend:function(){if(AC)try{AC.suspend()}catch(e){}},resume:function(){ctx()}},
+ rms:function(){if(!AN)return null;var d=new Float32Array(AN.fftSize);AN.getFloatTimeDomainData(d);
+  var s=0,pk=0;for(var i=0;i<d.length;i++){var v=d[i];s+=v*v;var a=v<0?-v:v;if(a>pk)pk=a}
+  return{rms:Math.sqrt(s/d.length),peak:pk}},
+ test:function(){var a=ctx();if(!a||!AN)return Promise.resolve(null);
+  var base=this.rms();var o=a.createOscillator(),gn=a.createGain();
+  o.type='sine';o.frequency.value=880;gn.gain.value=0.2;o.connect(gn);gn.connect(bus);o.start();
+  var self=this;return new Promise(function(res){setTimeout(function(){var m=self.rms();o.stop();gn.disconnect();
+   res({base:base,signal:m})},300)})}};
+})();
+</script>
