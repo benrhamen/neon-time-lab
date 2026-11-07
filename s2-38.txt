@@ -487,13 +487,24 @@ function padBtn(id,prop){
  el.addEventListener('pointerleave',off);
  el.addEventListener('contextmenu',function(e){e.preventDefault();});
 }
-var dragId=null,dragX=0;
+var dragId=null,dragX=0,dragY=0,dragT=0,dragType='';
+var gestId=null,gestX=0,gestY=0,gestT=0;
+function gesture(dx,dy,dt){
+ if(D.mode!=='play'||D.paused)return;
+ if(dy<=-28&&Math.abs(dy)>Math.abs(dx)*1.2){IN.jump=true;IN.jumpHeld=true;setTimeout(function(){IN.jumpHeld=false;},160);}
+ else if(Math.abs(dx)<12&&Math.abs(dy)<12&&dt<400)IN.throwB=true;
+}
 function bindDrag(){
  var cv=document.getElementById('dashcv');if(!cv)return;
  cv.addEventListener('pointerdown',function(e){
-  if(D.mode!=='play'||dragId!==null)return;
-  dragId=e.pointerId;dragX=e.clientX;
-  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  if(D.mode!=='play')return;
+  if(dragId===null){
+   dragId=e.pointerId;dragX=e.clientX;dragY=e.clientY;dragT=Date.now();dragType=e.pointerType;
+   try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  }else if(gestId===null&&e.pointerType==='touch'){
+   gestId=e.pointerId;gestX=e.clientX;gestY=e.clientY;gestT=Date.now();
+   try{cv.setPointerCapture(e.pointerId);}catch(_){}
+  }
   e.preventDefault();
  });
  cv.addEventListener('pointermove',function(e){
@@ -502,13 +513,21 @@ function bindDrag(){
   IN.right=dx>12;IN.left=dx<-12;
   e.preventDefault();
  });
- var dragEnd=function(e){
-  if(e.pointerId!==dragId)return;
-  dragId=null;IN.left=false;IN.right=false;
+ var dragReset=function(e){
+  if(e.pointerId===dragId){dragId=null;IN.left=false;IN.right=false;}
+  else if(e.pointerId===gestId)gestId=null;
  };
- cv.addEventListener('pointerup',dragEnd);
- cv.addEventListener('pointercancel',dragEnd);
- cv.addEventListener('lostpointercapture',dragEnd);
+ cv.addEventListener('pointerup',function(e){
+  if(e.pointerId===dragId){
+   var dx=e.clientX-dragX,dy=e.clientY-dragY,dt=Date.now()-dragT;
+   dragReset(e);if(dragType==='touch')gesture(dx,dy,dt);
+  }else if(e.pointerId===gestId){
+   var gx=e.clientX-gestX,gy=e.clientY-gestY,gt=Date.now()-gestT;
+   dragReset(e);gesture(gx,gy,gt);
+  }
+ });
+ cv.addEventListener('pointercancel',dragReset);
+ cv.addEventListener('lostpointercapture',dragReset);
  cv.addEventListener('contextmenu',function(e){e.preventDefault();});
 }
 /* ---------- physics helpers ---------- */
@@ -545,7 +564,7 @@ function startLevel(idx){
  D.idx=idx;D.lv=genLevel(idx);D.t=0;D.cam=0;D.bolts=[];D.parts=[];D.shieldT=0;D.board=false;D.hasBolt=false;
  D.charge=100;D.artGot=0;D.gateOpen=false;D.shake=0;D.cpIndex=0;D.camY=Math.max(0,Math.min(ROWS*TILE-120,(D.lv.start?D.lv.start.y:96)+9-72));
  D.hero={x:D.lv.start.x,y:D.lv.start.y,vx:0,vy:0,face:1,onGround:false,iframes:0,animT:0,throwT:0,coyote:0,buffer:0};
- IN.left=IN.right=IN.jump=IN.throwB=IN.jumpHeld=false;dragId=null;
+ IN.left=IN.right=IN.jump=IN.throwB=IN.jumpHeld=false;dragId=null;gestId=null;
  D.respawnX=D.lv.start.x;
  D.enemies=D.lv.spawns.map(function(s){return {kind:s.kind,x:s.x,y:s.y,vx:s.kind==='w'?-0.6:0,vy:0,t:Math.random()*6.28,baseY:s.y,dead:false,iframes:0};});
  if(D.lv.boss)D.lv.boss.flash=0;
@@ -1019,7 +1038,7 @@ var MOD={
    var s=sv();
    return XL.head('Era Rush','Run, jump and throw your way through history - one level per period, oldest to newest.')
     +'<p class="note">Your charge drains as you run: grab zapberries to stay powered. Open time capsules for the spark bolt, the glide board and a shield sprite. Find the 3 lost artifacts in every period for a Curator star. Every fifth period, a Tangle guardian blocks the time gate.</p>'
-    +'<p class="note">Best score: <strong>'+s.best+'</strong> · Periods cleared: '+s.cleared.length+'/25 · '+btn(s.muted?'Sound: off':'Sound: on','XL.dash.mute()','launch')+'</p>'+'<p class="note">Keyboard: arrow keys or A/D move, Up/W/Z jump, Space (or X/K) throw. On a phone, use the on-screen buttons.</p><p class="note">Period date ranges are approximate textbook conventions; exact dates vary by region and historian.</p>'
+    +'<p class="note">Best score: <strong>'+s.best+'</strong> · Periods cleared: '+s.cleared.length+'/25 · '+btn(s.muted?'Sound: off':'Sound: on','XL.dash.mute()','launch')+'</p>'+'<p class="note">Keyboard: arrow keys or A/D move, Up/W/Z jump, Space (or X/K) throw. On a phone: drag to run, swipe up to jump, tap to throw.</p><p class="note">Period date ranges are approximate textbook conventions; exact dates vary by region and historian.</p>'
     +(s.run&&s.run.idx>=0&&s.run.idx<25?'<section class="erareward"><h2>Saved run</h2><p>Period '+(s.run.idx+1)+' - '+esc(AGES[s.run.idx][0])+' · score '+esc(String(s.run.score))+' · lives '+esc(String(s.run.lives))+'</p><div class="chips">'+btn('Resume run','XL.dash.resume()','launch')+btn('Discard','XL.dash.discard()','')+'</div><p class="note">Starting any period below begins fresh - best score, stars and cleared periods are kept.</p></section>':'')
     +levelListHTML();
   }
@@ -1039,11 +1058,10 @@ var MOD={
     +'.erbtn.on{transform:scale(.93);filter:brightness(1.35)}'
     +'</style>'
     +'<div class="dashwrap" style="touch-action:none" oncontextmenu="return false"><canvas id="dashcv" width="640" height="480" style="width:100%;border:2px solid #26366e;border-radius:12px;background:#0a1230"></canvas>'
-    +'<p class="note" style="margin:6px 2px 0;font-size:11px;text-align:center">Drag left or right on the game to run</p>'
+    +'<p class="note" style="margin:6px 2px 0;font-size:11px;text-align:center">Drag to run &middot; swipe up to jump &middot; tap to throw</p>'
     +'<div class="dashpad" style="display:flex;gap:8px;margin-top:8px">'
     +'<div style="display:flex;gap:8px;width:100%">'
     +'<button id="padT" class="erbtn" style="flex:1;height:66px;background:#33290c;border-color:#ffe066;color:#ffe066"><span class="erico">&#8623;</span><span>THROW</span></button>'
-    +'<button id="padJ" class="erbtn" style="flex:1.2;height:66px;background:#0d3325;border-color:#5ef2c8;color:#5ef2c8"><span class="erico">&#9650;</span><span>JUMP</span></button>'
     +'</div></div></div>';
   }
   if(D.mode==='clear'){
@@ -1060,7 +1078,7 @@ var MOD={
  },
  after:function(){
   if(D.mode==='play'){
-   padBtn('padJ','jump');padBtn('padT','throwB');bindDrag();
+   padBtn('padT','throwB');bindDrag();
    D.last=0;D.acc=0;
    if(!D.raf)D.raf=requestAnimationFrame(frame);
   }
