@@ -111,6 +111,7 @@ var SAVE='neon.time-lab.anx.v1';
 var A={era:null,found:{},wrongs:0,over:false,last:''};
 function sv(){return XL.store(SAVE)||{best:{},cleared:[]};}
 function save(s){XL.store(SAVE,s);}
+function rr(){var y=window.scrollY;window.render();window.scrollTo(0,y);}
 function factFor(it,eraIdx){
  var p=POOL[it.icon];var era=NM(eraIdx);
  if(it.note)return p.n+': '+it.note;
@@ -137,7 +138,7 @@ function render(){
    if((A.era!==24&&A.era!==22)){
      s+='<button class="anxhit" onclick="XL.anx.stageTap(event)" aria-label="Scene: tap an object that does not belong"></button>';
      sc.items.forEach(function(it,ix){
-       if(A.found[ix])s+='<span class="anxmark" style="left:'+it.x+'%;top:'+it.y+'%">'+XL.icon(XLICONS[it.icon],2)+'</span>';
+       if(A.found[ix]){var bb=BOUNDS[A.era][ix],mw=Math.max(2*bb[0]*1.25,8),mh=Math.max(2*bb[1]*1.25,8);s+='<span class="anxmark" style="left:'+(it.x-mw/2)+'%;top:'+(it.y-mh/2)+'%;width:'+mw+'%;height:'+mh+'%"><i>\u2713</i></span>';}
      });
    }else{
      sc.items.forEach(function(it,ix){
@@ -172,7 +173,7 @@ function tap(ix){
      try{PAS.add('anx|'+K(A.era),'Anachronist: '+NM(A.era)+', points',score,'pts',false,score+' pts, '+A.wrongs+' mistakes');}catch(e){}
    }
  }
- window.render();
+ rr();
 }
 /* Correct only Anachronist rank direction; keep saved run rows. */
 (function(){try{var k='pa.scores.timelab.v1',raw=localStorage.getItem(k);if(!raw)return;var o=JSON.parse(raw),changed=false;if(!o||typeof o!=='object'||Array.isArray(o))return;Object.keys(o).forEach(function(id){var b=o[id];if(id.indexOf('anx|')!==0||!b||!Array.isArray(b.r)||b.low!==true)return;b.low=false;b.r.sort(function(a,c){return c.s-a.s});changed=true;});if(changed)localStorage.setItem(k,JSON.stringify(o));}catch(e){}})();
@@ -190,7 +191,7 @@ XL.anx={
   var sc=SCENES[A.era],best=-1,bd=1e9;
   sc.items.forEach(function(it,ix){var b=BOUNDS[A.era][ix],dx=(it.x-x)/b[0],dy=(it.y-y)/b[1],d=dx*dx+dy*dy;if(Math.abs(dx)<=1&&Math.abs(dy)<=1&&d<bd){bd=d;best=ix;}});
   if(best>=0){tap(best);}
-  else{A.wrongs++;A.last='Nothing out of time there. (-50)';window.render();}
+  else{A.wrongs++;A.last='Nothing out of time there. (-50)';rr();}
  },
  start:function(i){A.era=i;A.found={};A.foundCount=0;A.wrongs=0;A.over=false;A.last='';try{if(i<25)age=i;}catch(e){}window.render();scrollTo(0,0);},
  menu:function(){A.era=null;window.render();scrollTo(0,0);},
