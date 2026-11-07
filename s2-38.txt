@@ -168,6 +168,54 @@ var ANAMES={spear:'Spear',oillamp:'Oil lamp',a_brush:'Paint brush',a_fish:'Fish'
  clock:'Clock',telescope:'Telescope',a_map:'Sea chart',balloon:'Balloon',a_gear:'Gear',train:'Locomotive',bulb:'Light bulb',
  camera:'Camera',watch:'Wristwatch',plane:'Aeroplane',a_medical:'Medical kit',radio:'Radio',car:'Motor car',pen:'Ballpoint pen',
  tv:'Television',a_satellite:'Satellite',computer:'Computer',laptop:'Laptop',phone:'Smartphone',a_leaf:'Leaf',a_paper:'Pamphlet',longbow:'Longbow'};
+
+var AFACTS={spear:'Sharp stone point on a wooden shaft, for hunting.',
+ oillamp:'Burned animal fat, later olive oil, for light.',
+ a_brush:'Cave artists used brushes of animal hair or moss.',
+ a_fish:'People have fished for over 40,000 years.',
+ a_grain:'Wild grain became the first farmed crops ~10,000 BC.',
+ pot:'Fired clay pots stored grain and cooked stews.',
+ plough:'Ox-drawn ploughs made farming far more productive.',
+ tablet:'Wedge marks in wet clay were the first writing.',
+ wheel:'First pottery wheels ~3500 BC, then carts.',
+ sword:'Bronze, then iron blades for early empires.',
+ amphora:'Carried wine and olive oil across ancient seas.',
+ a_hammer:'From stone mallets to water-powered forge hammers.',
+ lyre:'Harp-like instrument for Greek songs and stories.',
+ scroll:'Papyrus rolls held books before bound pages.',
+ astrolabe:'Measured star height for latitude and time.',
+ book:'Bound pages, each copied by hand until printing.',
+ quill:'Goose-feather pen used for over a thousand years.',
+ candle:'Wax or tallow light before gas and electricity.',
+ compass:'Needle pointing north made sea voyages safer.',
+ hourglass:'Trickling sand timed ships, sermons and kitchens.',
+ press:"Gutenberg's press (c. 1440) made books cheap.",
+ clock:'Gear clocks spread across Europe from the 1300s.',
+ telescope:'Galileo saw Jupiter\'s moons in 1609-10.',
+ a_map:'Sea charts guided explorers across unmapped oceans.',
+ balloon:'First hot-air balloon flight, 1783.',
+ a_gear:'Gears drive mills, clocks and engines.',
+ train:"Stephenson's Rocket (1829) proved steam railways.",
+ bulb:"Edison's 1879 bulb lit homes with electricity.",
+ camera:'Early cameras needed minutes of stillness per image.',
+ watch:'Pocket watches shrank to the wrist in the 1900s.',
+ plane:"The Wright brothers' First powered flight: 12 seconds, 1903.",
+ a_medical:'Antiseptics, X-rays and vaccines transformed medicine.',
+ radio:'Marconi beamed wireless across the Atlantic in 1901.',
+ car:"Benz's 1886 Motorwagen began the car age.",
+ pen:"Biro's 1938 ballpoint ended leaky pens.",
+ tv:'Baird demonstrated television in 1926.',
+ a_satellite:'Sputnik 1, the first satellite, orbited in 1957.',
+ computer:'Room-sized valve computers arrived in the 1940s.',
+ laptop:'Computers shrank to portable size in the 1980s.',
+ phone:'First mobile call 1973; smartphone 2007.',
+ a_leaf:'Fossil leaves record ancient climates.',
+ a_paper:'Printed pamphlets spread big ideas from the 1500s.',
+ longbow:'English longbows won battles like Agincourt (1415).'};
+/* period-specific wording overrides: AFACTSP[artifact][levelIndex] */
+var AFACTSP={oillamp:{0:'Stone lamps burned animal fat to light caves.',1:'Stone lamps burned animal fat to light caves.',7:'Clay olive-oil lamps lit Greek and Roman homes.'}};
+
+
 var PROP={cave:'spear',mud:'tablet',classic:'scroll',medieval:'sword',renais:'quill',harbour:'compass',city:'book',indust:'a_gear',trench:'train',modern:'a_satellite'};
 /* ---------- seeded RNG ---------- */
 function RNG(seed){var s=seed>>>0||1;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
@@ -976,10 +1024,12 @@ var MOD={
     +levelListHTML();
   }
   if(D.mode==='intro'){
-   var i=D.idx,body='<p><strong>'+esc(AGES[i][0])+'</strong> - '+esc(range(i))+'</p><p>Lost artifacts to find:</p><p>';
-   LEVELS[i].a.forEach(function(k){body+='<span class="note" style="margin-right:8px">'+esc(ANAMES[k]||k)+'</span>';});
-   body+='</p>'+(LEVELS[i].boss?'<p>'+esc(LEVELS[i].bname)+' guards the time gate.</p>':'<p>Reach the time gate before your charge runs out.</p>');
-   return XL.head('Era Rush','Period '+(i+1)+' of 25')+cardHTML(AGES[i][0],body,btn('Start running','XL.dash.begin()','launch')+btn('All periods','XL.dash.menu()',''));
+   var i=D.idx,body='<p style="margin:6px 0">'+esc(range(i))+'. '+(LEVELS[i].boss?esc(LEVELS[i].bname)+' guards the time gate.':'Reach the gate before your charge runs out.')+'</p>';
+   try{var _af=LEVELS[i].a.filter(function(k){return AFACTS[k]});if(_af.length){body+='<ul style="margin:0 0 4px 16px;padding:0">'+_af.map(function(k){return '<li style="margin:2px 0"><strong>'+esc(ANAMES[k]||k)+'</strong>: '+esc((AFACTSP[k]&&AFACTSP[k][i])||AFACTS[k])+'</li>'}).join('')+'</ul>';
+   var _qk=_af[(i*2)%_af.length];body+='<p style="margin:8px 0 4px"><strong style="color:#ffd76a">Unlock: which artifact?</strong></p><p class="note" style="margin:0 0 6px">'+esc((AFACTSP[_qk]&&AFACTSP[_qk][i])||AFACTS[_qk])+'</p><div class="chips" style="margin:4px 0">'+_af.map(function(k){return btn(ANAMES[k]||k,'XL.dash.quiz('+JSON.stringify(k)+')','launch')}).join('')+'</div>'+'<p class="note" style="min-height:34px;margin:2px 0">'+(D.qok?'<strong style="color:#85f0c3">Correct - the gate is open!</strong>':(D.qbad?'<span style="color:#ff9d9d">Not quite - try again.</span>':''))+'</p>';}
+   else{var _lo=Math.min(AGES[i][1],AGES[i][2]),_hi=Math.max(AGES[i][1],AGES[i][2]),_cards=(typeof E!=='undefined'?E:[]).filter(function(c){return c.year>=_lo&&c.year<=_hi});
+   if(_cards.length){_cards.sort(function(){return Math.random()-.5});var _c=_cards[0];body+='<p class="note"><strong>Learn first: </strong>'+esc(_c.title)+' - '+esc(_c.result)+(_c.displayDate?' ('+esc(_c.displayDate)+')':'')+'</p>';}}}catch(e){}
+   return XL.head('Era Rush','Period '+(i+1)+' of 25')+'<style>.gameheading{margin:8px 0!important}.gameheading canvas{width:64px!important;height:74px!important}.gameheading h2{margin:2px 0!important}.erareward{padding:12px!important}.erareward h2{font-size:19px!important;margin:2px 0 6px!important}.erareward p{margin:3px 0!important}.erareward li{margin:1px 0!important}.erareward .chips{margin:6px 0!important}.erareward .chips button{min-height:38px!important;padding:7px 10px!important}.guide{margin:8px 0!important;gap:10px!important}.guide canvas{width:46px!important;height:54px!important}.guide small{display:none!important}.guide h1{margin:2px 0!important;font-size:22px!important}.guide p{margin:2px 0!important}.brand{margin:8px 0!important;font-size:19px!important}.brand small{display:none!important}.neon{padding-top:10px!important}</style>'+cardHTML(AGES[i][0],body,btn('Start running','XL.dash.begin()','launch')+btn('All periods','XL.dash.menu()',''));
   }
   if(D.mode==='play'){
    return '<style>.dashback{font-size:11px !important;padding-left:8px !important;padding-right:8px !important}header.top:has(>.dashback){grid-template-columns:auto minmax(0,1fr) !important}</style><header class="top">'+btn('\u25c0 Games','XL.close()','navbtn dashback')+'<span class="navbtn" style="cursor:default;flex:1;min-width:0;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">'+esc(AGES[D.idx][0])+'</span></header>'
@@ -1018,8 +1068,9 @@ var MOD={
 };
 XL.reg('dash',MOD);
 XL.dash={
- intro:function(i,carry){D.idx=i;D.carry=!!carry;D.mode='intro';render();},
- begin:function(){startLevel(D.idx);if(!D.carry){D.score=0;D.runStart=D.idx;D.recorded=false;}D.lives=3;D.mode='play';render();},
+ intro:function(i,carry){D.idx=i;D.carry=!!carry;D.mode='intro';D.qok=false;D.qbad=false;D.needq=LEVELS[i].a.some(function(k){return AFACTS[k]});render();},
+ quiz:function(k){var i=D.idx,_af=LEVELS[i].a.filter(function(x){return AFACTS[x]}),_qk=_af[(i*2)%_af.length];if(k===_qk){D.qok=true;D.qbad=false;}else{D.qbad=true;}render();},
+ begin:function(){if(D.needq&&!D.qok){D.qbad=true;render();return;}startLevel(D.idx);if(!D.carry){D.score=0;D.runStart=D.idx;D.recorded=false;}D.lives=3;D.mode='play';render();},
  menu:function(){if(D.mode==='play')saveRun();D.mode='menu';render();},
  mute:function(){var s=sv();s.muted=!s.muted;save(s);render();},
  resume:function(){if(!restoreRun()){D.mode='menu';render();}},
